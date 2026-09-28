@@ -1,0 +1,26 @@
+# systemd unit for a Linux server without Docker.
+# Install: see DEPLOY.md ("Linux without Docker"). Paths assume the project lives in /opt/ba-flow.
+[Unit]
+Description=BA Flow - ClickUp webhook service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=baflow
+Group=baflow
+WorkingDirectory=/opt/ba-flow
+EnvironmentFile=/opt/ba-flow/.env
+ExecStart=/opt/ba-flow/.venv/bin/ba-flow serve --host 127.0.0.1
+Restart=always
+RestartSec=5
+
+# Hardening: the service may only write its state and logs.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/ba-flow/data /opt/ba-flow/logs
+
+[Install]
+WantedBy=multi-user.target

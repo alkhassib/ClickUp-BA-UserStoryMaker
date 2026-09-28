@@ -1,0 +1,102 @@
+# BA Flow settings.
+# ClickUp objects are referenced by NAME, never by ID. IDs are resolved at startup
+# (and by `ba-flow check-config`) and cached. Rename something in ClickUp -> update it here.
+
+clickup:
+  team_id: "1100350000009146"      # can be overridden by CLICKUP_TEAM_ID in .env
+  space: "BA Flow"
+  # The bot identity is read from the API token (GET /user). Set this only to
+  # assert that the token belongs to the expected user.
+  bot_user_id: null
+
+  lists:
+    intake: "US Intake"
+    drafts: "Draft Tickets"
+    stories: "User Stories"
+
+  statuses:
+    intake:
+      new: "new"
+      to_analyze: "to analyze"        # W1 trigger
+      analyzing: "analyzing"
+      analyzed: "analyzed"
+      failed: "needs attention"
+      done: "done"
+    dt:                               # Draft Ticket (lives in `drafts`)
+      draft: "draft"
+      ba_review: "ba review"
+      submitted: "submitted"          # W2 trigger
+      compiled: "dt compiled"
+      failed: "needs attention"
+    gap:                              # Gap subtasks (share the `drafts` workflow)
+      open: "gap open"
+      closed: "gap closed"
+      compiled: "gap compiled"
+    story:
+      new: "ready"
+
+  fields:
+    drafts:
+      selected_option:
+        name: "Selected Option"
+        letters: ["A", "B", "C", "D", "E"]
+        tbd: "TBD"
+        other: "Other"
+        not_applicable: "N/A"
+      custom_answer: "BA Custom Answer"   # required when "Other" is selected
+      justification: "Justification"     # required when "TBD" or "N/A" is selected
+      source_key: "Source Key"
+    stories:
+      source_key: "Source Key"
+      # Optional metadata fields (template custom fields). Remove a line to skip it.
+      metadata:
+        epic: "Epic"
+        actor: "Actor"
+        channel: "Channel"
+        story_type: "Story Type"
+        priority: "MoSCoW"
+        version: "Version"
+
+output:
+  user_story_language: "en"          # ar | en
+  templates:                         # Jinja2, derived from templates/ClickUp_UserStory_{AR,EN}.md
+    ar: "templates/user_story.ar.md.j2"
+    en: "templates/user_story.en.md.j2"
+  empty_mandatory: "mark"            # mark -> heading + "not specified" note | omit
+  empty_optional: "omit"             # omit -> section removed | mark
+  include_decisions: true            # append a "Resolved gaps" table (traceability to the DT)
+
+llm:
+  provider: "openai"                 # anthropic | openai
+  models:
+    anthropic: "claude-haiku-4-5"
+    # gpt-5.6-luna for every step ($0.20 in / $1.20 out per 1M tokens). On the three hardest real cases
+    # (rich Arabic story, subtle contradiction, Arabic story writing) it matched gpt-5-mini at about half
+    # the cost; gpt-5-nano had failed the first two (0 gaps, missed contradiction).
+    openai: "gpt-5.6-luna"
+  steps: {}                          # optional per-step model override, e.g. {analyze_retry: "gpt-5"}
+                                     # (analyze_retry = second try when `analyze` returns no gaps)
+  max_doc_tokens: 100000             # per story (+ shared context); rough estimate
+  max_output_tokens: 32000
+  reasoning_effort: "low"            # OpenAI reasoning models: minimal | low | medium | high
+  step_effort: {}                    # optional per-step override, e.g. {validate_and_write: "medium"}
+  max_gaps: 15
+
+trigger:
+  mode: "polling"                    # polling (`ba-flow run`) | webhook | hybrid (`ba-flow serve`)
+  interval_seconds: 60               # polling mode
+  safety_poll_seconds: 900           # hybrid mode: slow poll that catches events a webhook missed
+  webhook:
+    host: "0.0.0.0"
+    port: 8080
+    path: "/clickup/webhook"
+    debounce_seconds: 10             # act only if the status is still the same after this delay
+
+storage:
+  db_path: "data/ba_flow.db"
+  cache_ttl_seconds: 3600            # ClickUp metadata cache
+
+logging:
+  level: "INFO"
+  file: "logs/ba_flow.jsonl"
+  store_llm_payloads: false

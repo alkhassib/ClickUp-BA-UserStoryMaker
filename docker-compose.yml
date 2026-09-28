@@ -1,0 +1,21 @@
+# One instance only: BA Flow uses SQLite and a single worker, two copies would process events twice.
+services:
+  ba-flow:
+    build: .
+    image: ba-flow:latest
+    container_name: ba-flow
+    restart: unless-stopped
+    env_file: .env                      # secrets: tokens, API keys, webhook id/secret (never baked into the image)
+    ports:
+      - "127.0.0.1:8080:8080"           # reachable only from this host: the reverse proxy forwards to it
+    volumes:
+      - ./data:/app/data                # SQLite state: back this folder up
+      - ./logs:/app/logs
+      - ./config:/app/config:ro         # settings.yaml + prompts, editable without rebuilding
+      - ./templates:/app/templates:ro
+    healthcheck:                        # only meaningful with `serve` (webhook / hybrid)
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=4).status == 200 else 1)"]
+      interval: 60s
+      timeout: 5s
+      start_period: 60s
+      retries: 3

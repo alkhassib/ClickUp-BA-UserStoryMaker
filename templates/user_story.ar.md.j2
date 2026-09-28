@@ -1,0 +1,216 @@
+{#- Derived from ClickUp_UserStory_AR.md. `show.<section>` is "full", "missing" or none (section omitted). -#}
+{%- macro missing() %}_⚠️ {{ L.missing }}_{% endmacro -%}
+## 📌 نص القصة
+> **بصفتي** {{ s.as_a }}، **أريد** {{ s.i_want }}، **حتى** {{ s.so_that }}.
+
+---
+{% if show.preconditions %}
+
+## 🚦 الشروط المسبقة
+{% if s.preconditions %}{% for p in s.preconditions %}
+- {{ p }}
+{% endfor %}{% else %}{{ missing() }}
+{% endif %}
+{% endif %}
+{% if show.trigger %}
+
+## ▶️ المُطلِق ونقطة الدخول
+{{ s.trigger or missing() }}
+{% endif %}
+{% if show.dependencies %}
+
+## 🔗 التبعيات والمكوّنات
+{% if s.dependencies %}
+| النوع | المعرّف | ملاحظة |
+|---|---|---|
+{% for d in s.dependencies %}
+| {{ d.type | cell }} | {{ d.id | cell }} | {{ d.note | cell }} |
+{% endfor %}
+{% else %}{{ missing() }}
+{% endif %}
+{% endif %}
+
+---
+{% if show.scenarios %}
+
+## 🧭 السيناريوهات
+{% if s.scenarios %}
+| المعرّف | النوع | الخطوات |
+|---|---|---|
+{% for sc in s.scenarios %}
+| **{{ sc.id }}** | {{ L.scenario[sc.type] }} | {{ sc.steps | steps }} |
+{% endfor %}
+{% else %}{{ missing() }}
+{% endif %}
+{% endif %}
+{% if show.business_rules %}
+
+## ⚖️ قواعد العمل
+{% if s.business_rules %}
+| المعرّف | القاعدة (إذا … فإن …) | الأثر | الرسالة |
+|---|---|---|---|
+{% for r in s.business_rules %}
+| **{{ r.id }}** | {{ r.rule | cell }} | {{ r.effect | cell }} | {{ r.message | cell }} |
+{% endfor %}
+{% else %}{{ missing() }}
+{% endif %}
+{% endif %}
+
+---
+{% if show.fields %}
+
+## 🧾 جدول الحقول
+{% if s.fields %}
+| # | الحقل (عربي / En) | النوع | إلزامي | قابل للتعديل | الافتراضي | القيود | المصدر | الظهور والقواعد والرسائل |
+|---|---|---|---|---|---|---|---|---|
+{% for f in s.fields %}
+| {{ loop.index }} | {{ f.name | cell }} | {{ f.type | cell }} | {{ f.required | yesno(L) }} | {{ f.editable | yesno(L) }} | {{ f.default | cell }} | {{ f.constraints | cell }} | {{ f.source | cell }} | {{ f.notes | cell }} |
+{% endfor %}
+{% else %}{{ missing() }}
+{% endif %}
+{% endif %}
+{% if show.buttons %}
+
+## 🔘 الأزرار والإجراءات
+{% if s.buttons %}
+| الزر | متى يظهر | متى يُفعَّل | عند الضغط (بالترتيب) | رسالة التأكيد | الانتقال بعده |
+|---|---|---|---|---|---|
+{% for b in s.buttons %}
+| {{ b.button | cell }} | {{ b.visible_when | cell }} | {{ b.enabled_when | cell }} | {{ b.on_click | steps }} | {{ b.confirmation | cell }} | {{ b.navigates_to | cell }} |
+{% endfor %}
+{% else %}{{ missing() }}
+{% endif %}
+{% endif %}
+{% if show.messages %}
+
+## 💬 الرسائل والإشعارات
+{% if s.messages %}
+| المعرّف | النص | متى يظهر |
+|---|---|---|
+{% for m in s.messages %}
+| **{{ m.id }}** | "{{ m.text | cell }}" | {{ m.shown_when | cell }} |
+{% endfor %}
+{% else %}{{ missing() }}
+{% endif %}
+{% endif %}
+{% if show.permissions %}
+
+## 🔐 الصلاحيات
+{% if s.permissions %}
+| الدور | يرى | ينفّذ | سلوك النظام مع غير المخوّل |
+|---|---|---|---|
+{% for p in s.permissions %}
+| {{ p.role | cell }} | {{ p.sees | check }} | {{ p.executes | check }} | {{ p.unauthorized_behavior | cell }} |
+{% endfor %}
+{% else %}{{ missing() }}
+{% endif %}
+{% endif %}
+{% if show.timed_events %}
+
+## ⏱️ المهل والأحداث الزمنية
+{% if s.timed_events %}
+| الحدث | المعادلة أو المدة | الإعداد | النتيجة |
+|---|---|---|---|
+{% for t in s.timed_events %}
+| {{ t.event | cell }} | {{ t.formula | cell }} | {{ t.setting | cell }} | {{ t.result | cell }} |
+{% endfor %}
+{% else %}{{ missing() }}
+{% endif %}
+{% endif %}
+
+---
+{% if show.acceptance_criteria %}
+
+## ✅ معايير القبول
+{% if s.acceptance_criteria %}
+| المعرّف | بافتراض (Given) | عندما (When) | إذن (Then) | القاعدة | النوع |
+|---|---|---|---|---|---|
+{% for ac in s.acceptance_criteria %}
+| **{{ ac.id }}** | {{ ac.given | cell }} | {{ ac.when | cell }} | {{ ac.then | cell }} | {{ ac.rule | cell }} | {{ L.ac[ac.type] }} |
+{% endfor %}
+{% else %}{{ missing() }}
+{% endif %}
+{% endif %}
+{% if show.examples %}
+
+## 🧪 أمثلة وبيانات الاختبار
+{% if s.examples %}
+{% if s.assumed_today or s.baseline_values %}
+> 📅 **تاريخ اليوم المفترض:** {{ s.assumed_today or "—" }} — **القيم الأساسية:** {{ s.baseline_values or "—" }}
+
+{% endif %}
+| المعرّف | البيانات المدخلة (الاختلاف فقط) | النتيجة المتوقعة | المعيار |
+|---|---|---|---|
+{% for ex in s.examples %}
+| **{{ ex.id }}** | {{ ex.input | cell }} | {{ ex.expected | cell }} | {{ ex.criterion | cell }} |
+{% endfor %}
+{% else %}{{ missing() }}
+{% endif %}
+{% endif %}
+
+---
+{% if show.outputs %}
+
+## 📤 المخرجات والحالة اللاحقة
+{% if s.outputs %}
+{% for key, label in L.outputs.items() %}{% if s.outputs[key] %}
+- **{{ label }}:** {{ s.outputs[key] }}
+{% endif %}{% endfor %}
+{% else %}{{ missing() }}
+{% endif %}
+{% endif %}
+{% if show.nfr %}
+
+## 📐 المتطلبات غير الوظيفية
+{% if s.nfr %}{% for n in s.nfr %}
+- {{ n }}
+{% endfor %}{% else %}{{ missing() }}
+{% endif %}
+{% endif %}
+{% if show.design %}
+
+## 🎨 التصميم
+{{ s.design or missing() }}
+{% endif %}
+{% if show.out_of_scope %}
+
+## 🚫 خارج نطاق القصة
+{% if s.out_of_scope %}{% for o in s.out_of_scope %}
+- {{ o }}
+{% endfor %}{% else %}{{ missing() }}
+{% endif %}
+{% endif %}
+
+## ❓ الأسئلة المفتوحة
+{% if open_questions %}{% for q in open_questions %}
+- **{{ q.id }}** ({{ q.gap }}): {{ q.text }}
+{% endfor %}{% else %}
+- لا يوجد
+{% endif %}
+{% if decisions %}
+
+## 🧾 الفجوات المحلولة
+| الفجوة | القرار | المصدر |
+|---|---|---|
+{% for d in decisions %}
+| **{{ d.gap }}** {{ d.title | cell }} | {{ d.text | cell }} | {{ d.source }} |
+{% endfor %}
+{% endif %}
+
+---
+
+## 🏁 جاهزية القصة (Definition of Ready)
+{% if open_questions %}
+> ⚠️ القصة غير جاهزة بعد: {{ open_questions | length }} سؤال مفتوح.
+
+{% endif %}
+- [ ] كل الأقسام معبأة أو مكتوب فيها (لا ينطبق) مع السبب
+- [ ] الدور موجود في جدول الأدوار ومصفوفة الصلاحيات
+- [ ] لكل قاعدة معيار قبول، ولكل معيار مثال ببيانات فعلية
+- [ ] كل رسالة وإعداد وقائمة مشار إليها موجودة في مستودعها
+- [ ] لا توجد أسئلة مفتوحة تؤثر على السلوك
+- [ ] التصميم مرفق ومطابق لجدول الحقول وحالات الشاشة
+- [ ] التبعيات جاهزة والبدائل الوهمية للتكاملات متاحة
+- [ ] مراجعة ثلاثية (تحليل · جودة · تطوير)
+
+📆 تاريخ المراجعة: — 👥 المراجعون: —

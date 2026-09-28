@@ -1,0 +1,8 @@
+# Caddy reverse proxy (automatic HTTPS certificates). Replace the host name.
+# Only the webhook path is public; /health stays internal (curl http://127.0.0.1:8080/health on the server).
+baflow.company.com {
+	handle /clickup/webhook {
+		reverse_proxy 127.0.0.1:8080
+	}
+	respond 404
+}
